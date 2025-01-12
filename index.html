@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo Lista R</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+            background: rgb(34,193,195);
+            background: linear-gradient(194deg, rgba(34,193,195,1) 0%, rgba(69,45,253,1) 0%, rgba(66,222,207,1) 100%);
+            color: rgb(5, 5, 5);
+        }
+
+        .game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .screen {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #ffe500;
+            font-size: 2rem;
+            flex-direction: column;
+        }
+
+        .game {
+            display: none;
+        }
+
+        .character {
+            position: absolute;
+            bottom: 20px;
+            left: 50px;
+            width: 50px;
+            height: 50px;
+            background: radial-gradient(circle, #fffb00, #ffcc00);
+            box-shadow: 0 0 15px 5px #fffb00;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #ffffff;
+        }
+
+        .obstacle {
+            position: absolute;
+            bottom: 10px;
+            width: 50px;
+            height: 50px;
+            background-color: #ffcc00;
+            box-shadow: 0 0 15px 5px #ffcc00;
+        }
+
+        .obstacle.triangle {
+            width: 0;
+            height: 0;
+            border-left: 25px solid transparent;
+            border-right: 25px solid transparent;
+            border-bottom: 50px solid #ffcc00;
+            box-shadow: 0 0 15px 5px #ffcc00;
+        }
+
+        .obstacle.hole {
+            width: 70px;
+            height: 20px;
+            background: #000;
+            border: 3px solid #555;
+            border-radius: 50%;
+            bottom: 10px;
+        }
+
+        .score {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 1.5rem;
+            color: #00ffcc;
+            background-color: rgba(0, 0, 0, 0.7); /* Fundo semitransparente */
+            padding: 10px; /* Espaçamento interno */
+            border: 2px solid #00ffcc; /* Borda */
+            border-radius: 5px; /* Bordas arredondadas */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); /* Sombra */
+}
+
+        @keyframes move {
+            from {
+                left: 100%;
+            }
+            to {
+                left: -50px;
+            }
+        }
+
+        .game-over {
+            display: none;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            margin: 20px;
+            background: #00ffcc;
+            color: #000;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            box-shadow: 0 0 10px 2px #00ffcc;
+        }
+
+        .btn:hover {
+            background: #ffe500;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="screen start-screen">
+            <h1>Jogo Lista R</h1>
+            <button class="btn start-btn">Iniciar</button>
+        </div>
+
+        <div class="game">
+            <div class="score">Pontuação: 0</div>
+            <div class="character">R</div>
+        </div>
+
+        <div class="screen game-over">
+            <h1>Game Over</h1>
+            <p class="final-score">Pontuação Final: 0</p> 
+            <button class="btn restart-btn">Recomeçar</button>
+            <p style="margin-top: 20px; color: #000000; font-size: 3rem;">DIA 20 VOTA R</p>
+        </div>
+    </div>
+
+    <script>
+        const startScreen = document.querySelector('.start-screen');
+        const game = document.querySelector('.game');
+        const gameOverScreen = document.querySelector('.game-over');
+        const character = document.querySelector('.character');
+        const startButton = document.querySelector('.start-btn');
+        const restartButton = document.querySelector('.restart-btn');
+        const scoreElement = document.querySelector('.score');
+
+        let isJumping = false;
+        let gameInterval;
+        let obstacleTimeout;
+        let score = 0;
+
+        const startGame = () => {
+            startScreen.style.display = 'none';
+            game.style.display = 'block';
+            gameOverScreen.style.display = 'none';
+
+            score = 0;
+            updateScore();
+
+            gameInterval = setInterval(() => {
+                score++;
+                updateScore();
+            }, 700);
+
+            createObstacle();
+            document.addEventListener('keydown', jump);
+        };
+        const finalScoreElement = document.querySelector('.final-score'); // Seleciona o elemento da pontuação final
+        const endGame = () => {
+            clearInterval(gameInterval);
+            clearTimeout(obstacleTimeout);
+            game.style.display = 'none';
+            gameOverScreen.style.display = 'flex';
+            document.removeEventListener('keydown', jump);
+            clearObstacles();
+            finalScoreElement.textContent = `Pontuação Final: ${score}`;
+        };
+
+        const jump = (e) => {
+            if (e.code === 'Space' && !isJumping) {
+                isJumping = true;
+                character.style.transition = 'bottom 0.8s';
+                character.style.bottom = '200px';
+
+                setTimeout(() => {
+                    character.style.bottom = '20px';
+                    isJumping = false;
+                }, 500);
+            }
+        };
+
+        const updateScore = () => {
+            scoreElement.textContent = `Pontuação: ${score}`;
+        };
+
+        const clearObstacles = () => {
+            const obstacles = document.querySelectorAll('.obstacle');
+            obstacles.forEach(obstacle => obstacle.remove());
+        };
+
+        const createObstacle = () => {
+            const obstacle = document.createElement('div');
+            const type = Math.random() > 0.5 ? 'triangle' : 'hole';
+            obstacle.classList.add('obstacle', type);
+            obstacle.style.left = '100%';
+
+            game.appendChild(obstacle);
+
+            const moveObstacle = setInterval(() => {
+                const obstacleLeft = parseInt(window.getComputedStyle(obstacle).left);
+                const characterBottom = parseInt(window.getComputedStyle(character).bottom);
+
+                if (obstacleLeft < 90 && obstacleLeft > 50 &&
+                    ((obstacle.classList.contains('hole') && characterBottom < 70) ||
+                     (!obstacle.classList.contains('hole') && characterBottom < 90))) {
+                    clearInterval(moveObstacle);
+                    endGame();
+                }
+
+                if (obstacleLeft <= -50) {
+                    clearInterval(moveObstacle);
+                    obstacle.remove();
+                } else {
+                    obstacle.style.left = `${obstacleLeft - 5}px`;
+                }
+            }, 30);
+
+            const randomInterval = Math.random() * 2000 + 1000; // Intervalo entre 1s e 3s
+            obstacleTimeout = setTimeout(createObstacle, randomInterval);
+        };
+
+        startButton.addEventListener('click', startGame);
+        restartButton.addEventListener('click', startGame);
+    </script>
+</body>
+</html>
+
